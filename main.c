@@ -25,13 +25,37 @@ void sha256(char *str, char outputBuffer[65]) {
     outputBuffer[64] = 0;
 }
 
-int main() {
-    char *input = "hello world";
-    char hash_output[65];
+void mine_block(Block *block, int difficulty) {
+    char prefix[65];
+    memset(prefix, '0', difficulty);
+    prefix[difficulty] = '\0';
 
-    sha256(input, hash_output);
-    printf("Input: %s\n", input);
-    printf("SHA-256: %s\n", hash_output);
+    do {
+        block->nonce++;
+        char input[1024];
+        sprintf(input, "%d%ld%s%s%d", block->index, block->timestamp,
+                block->data, block->prev_hash, block->nonce);
+        sha256(input, block->hash);
+        } 
+        while (strncmp(block->hash, prefix, difficulty) != 0);
+        printf("Found block: %s\n", block->hash);
+    }
+
+    
+
+int main() {
+    Block block;
+
+    block.index = 1;
+    block.timestamp = time(NULL);
+    strcpy(block.data, "first block.");
+    strcpy(block.prev_hash, "0000000000000000000000000000000000000000000000000000000000000000");
+    block.nonce = 0;
+    block.next = NULL;
+
+    int difficulty = 5;
+
+    mine_block(&block, difficulty);
 
     return 0;
 }
