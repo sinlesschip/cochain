@@ -38,14 +38,38 @@ void mine_block(Block *block, int difficulty) {
         sha256(input, block->hash);
         } 
         while (strncmp(block->hash, prefix, difficulty) != 0);
-        printf("Found block: %s\n", block->hash);
     }
 
+ 
+int is_valid_block(Block *block, Block *prev_block) {
+    char expected_hash[65];
+    char input[1024];
+    sprintf(input, "%d%ld%s%s%d", block->index, block->timestamp,
+            block->data, block->prev_hash, block->nonce);
+    sha256(input, expected_hash);
     
+    return (strcmp(block->hash, expected_hash) == 0) &&
+           (strcmp(block->prev_hash, prev_block->hash) == 0);
+}
+
+void add_block(Block **head, Block *new_block) {
+    if (*head == NULL) {
+        *head = new_block;
+    } else {
+        Block *current = *head;
+        while (current->next != NULL) {
+            current = current->next;
+        }
+        current->next = new_block;
+    }
+    new_block->next = NULL;
+}
+
 
 int main() {
+    Block *head = NULL;
+    
     Block block;
-
     block.index = 1;
     block.timestamp = time(NULL);
     strcpy(block.data, "first block.");
@@ -54,8 +78,27 @@ int main() {
     block.next = NULL;
 
     int difficulty = 5;
-
+    
+    // mine and add a couple blocks
     mine_block(&block, difficulty);
+    add_block(&head, &block);
+    printf("Found block: %s\nNonce: %d\n", block.hash, block.nonce);
 
+    Block block2;
+    block2.index = 2;
+    block2.timestamp = time(NULL);
+    strcpy(block2.data, "second block.");
+    strcpy(block2.prev_hash, block.hash);
+    block2.nonce = 0;
+    mine_block(&block2, difficulty);  
+    add_block(&head, &block2);
+    printf("Found block: %s\nNonce: %d\n", block2.hash, block2.nonce);
+
+    // print the blockchain
+    Block *current = head;
+    while (current != NULL) {
+        printf("Block %d: %s\n", current->index, current->hash);
+        current = current->next;
+    }
     return 0;
 }
