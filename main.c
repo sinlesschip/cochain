@@ -2,6 +2,7 @@
 #include <openssl/sha.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 typedef struct Block {
     int index;
@@ -65,40 +66,48 @@ void add_block(Block **head, Block *new_block) {
     new_block->next = NULL;
 }
 
+// mine n blocks and add them to the blockchain
+void mine_and_add_blocks(Block **head, int n, int difficulty) {
+    for (int i = 0; i < n; i++) {
+        Block *new_block = malloc(sizeof(Block));
+        new_block->index = i + 1;
+        new_block->timestamp = time(NULL);
+        sprintf(new_block->data, "Block %d data", i + 1);
+        
+        if (*head == NULL) {
+            strcpy(new_block->prev_hash, "0000000000000000000000000000000000000000000000000000000000000000");
+        } else {
+            strcpy(new_block->prev_hash, (*head)->hash);
+        }
+        
+        new_block->nonce = 0;
+        mine_block(new_block, difficulty);
+        printf("Found block: %s\nNonce: %d\n", new_block->hash, new_block->nonce);
+        add_block(head, new_block);
+    }
+}
+
 
 int main() {
     Block *head = NULL;
     
-    Block block;
-    block.index = 1;
-    block.timestamp = time(NULL);
-    strcpy(block.data, "first block.");
-    strcpy(block.prev_hash, "0000000000000000000000000000000000000000000000000000000000000000");
-    block.nonce = 0;
-    block.next = NULL;
-
     int difficulty = 5;
+    int n = 5;
+    mine_and_add_blocks(&head, n, difficulty);
+    printf("Blockchain after mining %d blocks:\n", n);
     
-    // mine and add a couple blocks
-    mine_block(&block, difficulty);
-    add_block(&head, &block);
-    printf("Found block: %s\nNonce: %d\n", block.hash, block.nonce);
-
-    Block block2;
-    block2.index = 2;
-    block2.timestamp = time(NULL);
-    strcpy(block2.data, "second block.");
-    strcpy(block2.prev_hash, block.hash);
-    block2.nonce = 0;
-    mine_block(&block2, difficulty);  
-    add_block(&head, &block2);
-    printf("Found block: %s\nNonce: %d\n", block2.hash, block2.nonce);
-
-    // print the blockchain
     Block *current = head;
     while (current != NULL) {
         printf("Block %d: %s\n", current->index, current->hash);
         current = current->next;
+    }
+    
+    // free the blockchain
+    current = head;
+    while (current != NULL) {
+        Block *temp = current;
+        current = current->next;
+        free(temp);
     }
     return 0;
 }
