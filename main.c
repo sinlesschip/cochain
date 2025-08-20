@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define GENESIS_BLOCK_HASH "0000000000000000000000000000000000000000000000000000000000000000"
+
 typedef struct Block {
     int index;
     time_t timestamp;
@@ -24,6 +26,14 @@ void sha256(char *str, char outputBuffer[65]) {
         sprintf(outputBuffer + (i * 2), "%02x", hash[i]);
     }
     outputBuffer[64] = 0;
+}
+
+Block* find_tail(Block *head) {
+    if (head == NULL) return NULL;
+    while (head->next != NULL) {
+        head = head->next;
+    }
+    return head;
 }
 
 void mine_block(Block *block, int difficulty) {
@@ -86,16 +96,13 @@ void mine_and_add_blocks(Block **head, int n, int difficulty) {
         new_block->index = i + 1;
         new_block->timestamp = time(NULL);
         sprintf(new_block->data, "Block %d data", i + 1);
-        
-        if (*head == NULL) {
-            strcpy(new_block->prev_hash, "0000000000000000000000000000000000000000000000000000000000000000");
-        } else {
-            // Find the last block to get its hash
-            Block *current = *head;
-            while (current->next != NULL) {
-                current = current->next;
-            }
-            strcpy(new_block->prev_hash, current->hash);
+
+        Block *tail = find_tail(*head);
+        if (tail == NULL) {
+            strcpy(new_block->prev_hash, GENESIS_BLOCK_HASH);
+        }
+        else {
+            strcpy(new_block->prev_hash, tail->hash);
         }
         
         new_block->nonce = 0;
@@ -109,7 +116,7 @@ int is_valid_chain(Block *head) {
     if (head == NULL) return 1;
     
     // Validate genesis block's previous hash
-    if (strcmp(head->prev_hash, "0000000000000000000000000000000000000000000000000000000000000000") != 0) {
+    if (strcmp(head->prev_hash, GENESIS_BLOCK_HASH) != 0) {
         printf("Invalid genesis block: Incorrect previous hash\n");
         return 0;
     }
