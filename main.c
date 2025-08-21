@@ -80,11 +80,8 @@ void add_block(Block **head, Block *new_block) {
     if (*head == NULL) {
         *head = new_block;
     } else {
-        Block *current = *head;
-        while (current->next != NULL) {
-            current = current->next;
-        }
-        current->next = new_block;
+        Block *tail = find_tail(*head);
+        tail->next = new_block;
     }
     new_block->next = NULL;
 }
